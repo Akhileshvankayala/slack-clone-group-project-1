@@ -1,6 +1,12 @@
 import express from "express"
 import { userModel } from "../models/userModel.js"
 import { upload, uploadToCloudinary } from "../config/multer-cloudinary.js"
+import { promises as fs } from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const router = express.Router()
 
@@ -36,7 +42,7 @@ router.put("/profile", upload.single("profilePic"), async (req, res, next) => {
             bio: bio ? bio.trim() : "" 
         }
         
-        // Handle file upload to Cloudinary
+        // Handle file upload to Cloudinary with local storage fallback
         if (req.file) {
             try {
                 console.log("Uploading file to Cloudinary:", req.file.mimetype)
@@ -47,12 +53,30 @@ router.put("/profile", upload.single("profilePic"), async (req, res, next) => {
                 }
                 
                 updateData.profilePic = result.secure_url
-                console.log("File uploaded successfully:", result.secure_url)
+                console.log("File uploaded successfully to Cloudinary:", result.secure_url)
             } catch (uploadErr) {
-                console.error("Cloudinary upload error:", uploadErr)
-                return res.status(400).json({ 
-                    message: `Upload failed: ${uploadErr.message}` 
-                })
+                console.warn("Cloudinary upload failed, using local storage fallback:", uploadErr.message)
+                
+                try {
+                    // Local fallback
+                    const ext = path.extname(req.file.originalname) || ".jpg"
+                    const filename = `profile_${Date.now()}${ext}`
+                    const uploadDir = path.join(__dirname, "../uploads")
+                    
+                    // Ensure uploads directory exists
+                    await fs.mkdir(uploadDir, { recursive: true })
+                    
+                    const filePath = path.join(uploadDir, filename)
+                    await fs.writeFile(filePath, req.file.buffer)
+                    
+                    updateData.profilePic = `/uploads/${filename}`
+                    console.log("File saved to local storage fallback successfully:", updateData.profilePic)
+                } catch (fallbackErr) {
+                    console.error("Local storage fallback failed:", fallbackErr)
+                    return res.status(400).json({ 
+                        message: `Upload failed: ${uploadErr.message}. Local backup also failed: ${fallbackErr.message}` 
+                    })
+                }
             }
         }
 

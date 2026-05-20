@@ -8,7 +8,9 @@ export const useSocketStore = create((set, get) => ({
 
   connectSocket: () => {
     const { token } = useAuthStore.getState()
+    const { socket: existingSocket } = get()
     if (!token) return
+    if (existingSocket) return
 
     const socket = io('http://localhost:4000', {
       auth: { token }
@@ -20,6 +22,10 @@ export const useSocketStore = create((set, get) => ({
 
     socket.on('disconnect', () => {
       set({ isConnected: false })
+    })
+
+    socket.on('connect_error', (err) => {
+      console.error('Socket connect error:', err.message)
     })
 
     set({ socket })

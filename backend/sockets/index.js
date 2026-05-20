@@ -8,19 +8,30 @@ const userSocketMap = new Map()
 
 const socketHandler = (io) => {
 
-    io.on("connection", async (socket) => {
-        console.log("New socket:", socket.id)
+    io.use((socket, next) => {
+        const token = socket.handshake.auth?.token
+        if (!token) {
+            return next(new Error('Authentication error: token missing'))
+        }
 
         try {
-            // =====================================
-            // 🔥 1. AUTHENTICATION
-            // =====================================
-            const token = socket.handshake.auth?.token
-            if (!token) return socket.disconnect()
-
             const decoded = jwt.verify(token, process.env.JWT_SECRET)
-            const userId = decoded.id
-            socket.userId = userId
+            socket.userId = decoded.id
+            next()
+        } catch (err) {
+            next(new Error('Authentication error: invalid token'))
+        }
+    })
+
+    io.on("connection", async (socket) => {
+        console.log("Socket connected:", socket.id, "userId=", socket.userId)
+
+        try {
+            const userId = socket.userId
+
+            // =====================================
+            // 🔥 2. USER ↔ SOCKET MAPPING
+            // =====================================
 
             // =====================================
             // 🔥 2. USER ↔ SOCKET MAPPING
@@ -132,23 +143,61 @@ const socketHandler = (io) => {
             })
 
             // =====================================
-            // 🔥 READ RECEIPTS
+            // READ RECEIPTS
             // =====================================
             socket.on("message:read", async ({ chatId }) => {
                 try {
                     if (!chatId) return
+                    const userId = socket.userId
 
                     const chat = await chatModel.findOne({ chatId })
                     if (!chat) return
 
+                    // 1. Reset current user's unread count
                     chat.unreadCount.set(userId.toString(), 0)
                     await chat.save()
 
+                    // 2. Add current user to seenBy array for all messages they haven't seen yet
+                    // Only update messages where current user is NOT the sender and NOT in seenBy
                     await messageModel.updateMany(
-                        { chatId, senderId: { $ne: userId } },
-                        { status: "read" }
+                        { 
+                            chatId, 
+                            senderId: { $ne: userId },
+                            seenBy: { $ne: userId }
+                        },
+                        { $addToSet: { seenBy: userId } }
                     )
 
+                    // 3. For all messages in this chat, check if they should be marked as "read"
+                    // A message is "read" if everyone except the sender has seen it.
+                    // For groups: seenBy.length === chat.participants.length - 1
+                    // For 1-on-1: seenBy.length === 1
+                    const totalNeeded = chat.participants.length - 1
+
+                    // Find messages that are NOT yet status="read" but have enough seenBy
+                    const messagesToMarkAsRead = await messageModel.find({
+                        chatId,
+                        status: { $ne: "read" },
+                        $expr: { $gte: [{ $size: "$seenBy" }, totalNeeded] }
+                    })
+
+                    if (messagesToMarkAsRead.length > 0) {
+                        const messageIds = messagesToMarkAsRead.map(m => m._id)
+                        await messageModel.updateMany(
+                            { _id: { $in: messageIds } },
+                            { status: "read" }
+                        )
+
+                        // Emit "message:read" event for each message that just became fully read
+                        // or just emit once for the chat to tell others to refresh
+                        io.to(`chat:${chatId}`).emit("message:read:update", {
+                            chatId,
+                            messageIds,
+                            status: "read"
+                        })
+                    }
+
+                    // Also emit the old event for backward compatibility if needed
                     socket.to(`chat:${chatId}`).emit("message:read", {
                         chatId,
                         userId
@@ -179,7 +228,7 @@ const socketHandler = (io) => {
             // =====================================
             // 🔥 DISCONNECT
             // =====================================
-            socket.on("disconnect", async () => {
+            socket.on("disconnect", async (reason) => {
                 const sockets = userSocketMap.get(userId)
 
                 if (sockets) {
@@ -197,7 +246,7 @@ const socketHandler = (io) => {
                     }
                 }
 
-                console.log("Disconnected:", socket.id)
+                console.log("Disconnected:", socket.id, "reason=", reason)
             })
 
         } catch (err) {

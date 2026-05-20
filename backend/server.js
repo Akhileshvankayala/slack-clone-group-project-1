@@ -50,6 +50,7 @@ const io = new Server(server, {
     }
 })
 socketHandler(io)
+app.set("io", io)
 
 
 // Optional Redis setup

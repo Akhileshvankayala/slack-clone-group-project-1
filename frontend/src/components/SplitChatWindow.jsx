@@ -21,6 +21,8 @@ export default function SplitChatWindow() {
     markAllAsReadRight,
     setTyping,
     typingUsers,
+    removeMessage,
+    updateMessage,
     toggleDualView
   } = useChatStore()
 
@@ -68,6 +70,10 @@ export default function SplitChatWindow() {
       }
     })
 
+    socket.on('message:updated', ({ message, chatId }) => {
+      updateMessage(message)
+    })
+
     socket.on('user:typing', ({ chatId, userId }) => {
       setTyping(chatId, userId, true)
     })
@@ -76,14 +82,20 @@ export default function SplitChatWindow() {
       setTyping(chatId, userId, false)
     })
 
+    socket.on('message:deleted', ({ messageId, chatId }) => {
+      removeMessage(messageId)
+    })
+
     return () => {
       socket.off('message:receive')
       socket.off('message:delivered')
       socket.off('message:read')
+      socket.off('message:updated')
+      socket.off('message:deleted')
       socket.off('user:typing')
       socket.off('user:stopTyping')
     }
-  }, [socket, addMessageLeft, addMessageRight, updateMessageStatusLeft, updateMessageStatusRight, markAllAsReadLeft, markAllAsReadRight, setTyping, user])
+  }, [socket, addMessageLeft, addMessageRight, updateMessageStatusLeft, updateMessageStatusRight, markAllAsReadLeft, markAllAsReadRight, setTyping, removeMessage, user])
 
   const handleCloseDualView = () => {
     toggleDualView()

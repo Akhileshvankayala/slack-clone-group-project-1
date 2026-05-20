@@ -67,6 +67,22 @@ export const useChatStore = create((set, get) => ({
     }))
   },
 
+  removeMessage: (messageId) => {
+    set((state) => ({
+      messages: state.messages.filter(m => m._id !== messageId),
+      messagesLeft: state.messagesLeft.filter(m => m._id !== messageId),
+      messagesRight: state.messagesRight.filter(m => m._id !== messageId)
+    }))
+  },
+
+  updateMessage: (updatedMessage) => {
+    set((state) => ({
+      messages: state.messages.map(m => m._id === updatedMessage._id ? updatedMessage : m),
+      messagesLeft: state.messagesLeft.map(m => m._id === updatedMessage._id ? updatedMessage : m),
+      messagesRight: state.messagesRight.map(m => m._id === updatedMessage._id ? updatedMessage : m)
+    }))
+  },
+
   sendMessage: (chatId, text, fileUrl = null, fileType = null) => {
     const { socket } = useSocketStore.getState()
     if (socket) {
@@ -231,6 +247,42 @@ export const useChatStore = create((set, get) => ({
   markAllAsReadRight: (chatId) => {
     set((state) => ({
       messagesRight: state.messagesRight.map(m => m.chatId === chatId ? { ...m, status: 'read' } : m)
+    }))
+  },
+
+  addParticipants: async (chatId, participantIds) => {
+    try {
+      const res = await api.post(`/chats/${chatId}/participants`, { participants: participantIds })
+      const updatedChat = res.data.chat
+      set((state) => ({
+        activeChat: state.activeChat?.chatId === chatId ? updatedChat : state.activeChat,
+        chats: state.chats.map(c => c.chatId === chatId ? updatedChat : c)
+      }))
+      return { success: true }
+    } catch (err) {
+      console.error(err)
+      return { success: false, message: err.response?.data?.message || 'Failed to add participants' }
+    }
+  },
+
+  removeParticipant: async (chatId, participantId) => {
+    try {
+      const res = await api.delete(`/chats/${chatId}/participants/${participantId}`)
+      const updatedChat = res.data.chat
+      set((state) => ({
+        activeChat: state.activeChat?.chatId === chatId ? updatedChat : state.activeChat,
+        chats: state.chats.map(c => c.chatId === chatId ? updatedChat : c)
+      }))
+      return { success: true }
+    } catch (err) {
+      console.error(err)
+      return { success: false, message: err.response?.data?.message || 'Failed to remove participant' }
+    }
+  },
+
+  updateMessagesStatus: (messageIds, status) => {
+    set((state) => ({
+      messages: state.messages.map(m => messageIds.includes(m._id) ? { ...m, status } : m)
     }))
   }
 }))

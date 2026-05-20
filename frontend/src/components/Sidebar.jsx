@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore, api } from '../stores/authStore'
 import { useChatStore } from '../stores/chatStore'
-import { Search, MoreVertical, MessageSquarePlus, LogOut, Check, CheckCheck, Users, X, Copy } from 'lucide-react'
+import { Search, MoreVertical, MessageSquarePlus, LogOut, Check, CheckCheck, Users, X, Copy, ChevronDown, ChevronRight, Hash, Plus, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import Profile from './Profile'
 import UserProfile from './UserProfile'
@@ -21,6 +21,7 @@ export default function Sidebar() {
     setActiveChatLeft,
     setActiveChatRight
   } = useChatStore()
+  
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
@@ -37,8 +38,9 @@ export default function Sidebar() {
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [selectedUserProfile, setSelectedUserProfile] = useState(null)
 
-  // Filter state
-  const [showGroupsOnly, setShowGroupsOnly] = useState(false)
+  // Collapsible section state (Slack style)
+  const [channelsExpanded, setChannelsExpanded] = useState(true)
+  const [dmsExpanded, setDmsExpanded] = useState(true)
 
   useEffect(() => {
     if (!search.trim()) {
@@ -116,148 +118,90 @@ export default function Sidebar() {
     return chat.participants.find(p => p._id !== user._id) || chat.participants[0]
   }
 
+  const channels = chats.filter(chat => chat.isGroup)
+  const directMessages = chats.filter(chat => !chat.isGroup)
+
   return (
-    <div className="flex flex-col h-full bg-white relative">
-      {/* Header */}
-      <div className="bg-gray-100 h-16 px-4 flex items-center justify-between border-b border-gray-200">
-        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setShowProfile(true)}>
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg overflow-hidden border-2 border-transparent group-hover:border-primary transition-all">
-            {user.profilePic ? (
-              <img src={user.profilePic.startsWith('http') ? user.profilePic : `http://localhost:4000${user.profilePic}`} alt={user.name} className="w-full h-full object-cover" />
-            ) : (
-              user.name.charAt(0).toUpperCase()
-            )}
-          </div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-gray-800 leading-tight">{user.name}</span>
-            <span className="text-[10px] text-gray-500 uppercase tracking-tighter">My Profile</span>
+    <div className="flex flex-col h-full bg-slack-purple text-white/80 select-none">
+      {/* 🔹 Workspace Header */}
+      <div className="h-14 px-4 flex items-center justify-between border-b border-slack-purple-dark/30 hover:bg-slack-purple-dark/20 cursor-pointer transition-colors group">
+        <div className="flex flex-col min-w-0" onClick={() => setShowProfile(true)}>
+          <span className="font-bold text-white text-sm leading-tight flex items-center gap-1.5 truncate">
+            Workspace
+            <ChevronDown size={14} className="text-white/60 group-hover:text-white" />
+          </span>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="text-[10px] text-white/50 truncate font-medium">{user.name}</span>
           </div>
         </div>
-        <div className="flex gap-2 text-gray-600">
-          <button
-            className={`hover:bg-gray-200 p-2 rounded-full transition-colors ${dualViewMode ? 'bg-primary text-white' : ''}`}
+
+        {/* Global actions */}
+        <div className="flex items-center gap-1 text-white/60">
+          <button 
+            className={`hover:bg-white/10 hover:text-white p-1.5 rounded-md transition-all ${dualViewMode ? 'bg-white/10 text-white' : ''}`}
             onClick={toggleDualView}
-            title="Toggle dual view"
+            title="Toggle Split Panel view"
           >
-            <Copy size={20} />
+            <Copy size={16} />
           </button>
           <button 
-            className={`hover:bg-gray-200 p-2 rounded-full transition-colors ${showGroupsOnly ? 'bg-primary text-white' : ''}`} 
-            onClick={() => setShowGroupsOnly(!showGroupsOnly)} 
-            title="View Groups"
-          >
-            <Users size={20} />
-          </button>
-          <button 
-            className="hover:bg-gray-200 p-2 rounded-full transition-colors" 
+            className="hover:bg-white/10 hover:text-white p-1.5 rounded-md transition-all" 
             onClick={() => setShowGroupModal(true)} 
-            title="Create Group"
+            title="Create Channel"
           >
-            <MessageSquarePlus size={20} />
+            <Plus size={16} />
           </button>
-          <button className="hover:bg-gray-200 p-2 rounded-full transition-colors" onClick={logout} title="Logout">
-            <LogOut size={20} />
+          <button 
+            className="hover:bg-white/10 hover:text-white p-1.5 rounded-md transition-all" 
+            onClick={logout} 
+            title="Logout"
+          >
+            <LogOut size={16} />
           </button>
         </div>
       </div>
 
-      {/* Profile Side Panel Overlay */}
-      {showProfile && (
-        <div className="absolute inset-0 bg-white z-[60] flex flex-col h-full">
-          <Profile onClose={() => setShowProfile(false)} />
-        </div>
-      )}
-
-      {/* User Profile Overlay */}
-      {showUserProfile && selectedUserProfile && (
-        <div className="absolute inset-0 bg-white z-[60] flex flex-col h-full">
-          <UserProfile user={selectedUserProfile} onClose={() => { setShowUserProfile(false); setSelectedUserProfile(null); }} />
-        </div>
-      )}
-
-      {/* Group Modal Overlay */}
-      {showGroupModal && (
-        <div className="absolute inset-0 bg-white z-50 flex flex-col h-full">
-          <div className="bg-primary text-white h-24 px-4 flex items-end pb-4 font-semibold text-lg gap-4">
-            <button onClick={() => { setShowGroupModal(false); setSelectedUsers([]); setGroupName(''); }} className="hover:bg-primary-dark p-1 rounded-full">
-              <X size={24} />
-            </button>
-            Create New Group
-          </div>
-          <div className="p-4 flex flex-col flex-1 overflow-hidden">
-            <input 
-              type="text" 
-              placeholder="Group Subject" 
-              className="border-b-2 border-primary w-full py-2 mb-4 focus:outline-none"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-            />
-            {selectedUsers.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {selectedUsers.map(u => (
-                  <div key={u._id} className="bg-gray-200 rounded-full px-3 py-1 flex items-center gap-2 text-sm">
-                    {u.name}
-                    <button onClick={() => handleRemoveFromGroup(u._id)}><X size={14} className="text-gray-500" /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <input
-              type="text"
-              placeholder="Search participants..."
-              className="w-full bg-gray-100 rounded-lg px-4 py-2 focus:outline-none mb-2"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <div className="flex-1 overflow-y-auto">
-              {search.trim() && searchResults.map(u => (
-                <div key={u._id} onClick={() => handleSelectForGroup(u)} className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-bold mr-3">{u.name.charAt(0).toUpperCase()}</div>
-                  <span>{u.name}</span>
-                </div>
-              ))}
-            </div>
-            {selectedUsers.length > 0 && groupName.trim() && (
-              <button onClick={handleCreateGroup} className="bg-secondary text-white py-3 rounded-lg mt-2 shadow-md hover:bg-green-600 transition-colors font-semibold">
-                Create Group
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Search Bar */}
-      <div className="p-2 bg-white border-b border-gray-200">
+      {/* 🔹 Slack Search Filter Box */}
+      <div className="p-3 bg-slack-purple">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
+            <Search size={14} className="text-white/40" />
           </div>
           <input
             type="text"
-            placeholder="Search or start new chat"
-            className="w-full bg-gray-100 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-1 focus:ring-primary text-sm transition-colors"
+            placeholder="Jump to or start chat..."
+            className="w-full bg-white/10 text-white placeholder-white/40 rounded px-8 py-1.5 text-xs focus:outline-none focus:bg-white/15 focus:ring-1 focus:ring-slack-active transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {search.trim() && (
+            <button 
+              onClick={() => setSearch('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/40 hover:text-white"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Chat List */}
-      <div className="flex-1 overflow-y-auto scrollbar-custom bg-white">
+      {/* 🔹 Chat / Section Feed */}
+      <div className="flex-1 overflow-y-auto scrollbar-custom bg-slack-purple">
         {search.trim() && !showGroupModal ? (
           <div>
-            <div className="px-4 py-2 text-primary text-sm font-medium">Search Results</div>
+            <div className="px-4 py-2 text-white/50 text-[10px] uppercase font-bold tracking-wider">Search Results</div>
             {searchResults.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-500">No users found.</div>
+              <div className="px-4 py-3 text-xs text-white/40">No users found.</div>
             ) : (
               searchResults.map(u => (
                 <div 
                   key={u._id} 
-                  className="flex items-center px-4 py-3 hover:bg-gray-50 border-b border-gray-100 transition-colors group"
+                  className="flex items-center px-4 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5 transition-all group"
                 >
                   <div 
                     onClick={() => { setSelectedUserProfile(u); setShowUserProfile(true); }}
-                    className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold mr-3 flex-shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                    className="w-8 h-8 rounded-md bg-white/15 flex items-center justify-center text-white font-bold mr-2.5 flex-shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-slack-active transition-all"
                   >
                     {u.profilePic ? (
                       <img src={u.profilePic.startsWith('http') ? u.profilePic : `http://localhost:4000${u.profilePic}`} alt={u.name} className="w-full h-full object-cover" />
@@ -266,12 +210,12 @@ export default function Sidebar() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleStartChat(u._id)}>
-                    <h3 className="text-gray-900 font-medium truncate">{u.name}</h3>
-                    <p className="text-sm text-gray-500 truncate">{u.email}</p>
+                    <h3 className="text-white text-xs font-semibold truncate leading-none">{u.name}</h3>
+                    <p className="text-[10px] text-white/40 truncate mt-0.5">{u.email}</p>
                   </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setSelectedUserProfile(u); setShowUserProfile(true); }}
-                    className="ml-2 px-3 py-1 text-xs bg-primary text-white rounded-full hover:bg-primary-dark transition-colors opacity-0 group-hover:opacity-100"
+                    className="ml-2 px-2.5 py-0.5 text-[10px] bg-slack-active text-white rounded hover:bg-opacity-90 transition-colors opacity-0 group-hover:opacity-100"
                   >
                     View
                   </button>
@@ -280,111 +224,192 @@ export default function Sidebar() {
             )}
           </div>
         ) : (
-          chats.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 px-4 text-center">
-              <MessageSquarePlus size={48} className="mb-4 text-gray-300" />
-              <p>{showGroupsOnly ? 'No groups found.' : 'No chats yet. Search for a user to start chatting!'}</p>
-            </div>
-          ) : (
-            chats
-              .filter(chat => !showGroupsOnly || chat.isGroup)
-              .map(chat => {
-              const isActive = activeChat?.chatId === chat.chatId
-              const isOpenLeft = activeChatLeft?.chatId === chat.chatId
-              const isOpenRight = activeChatRight?.chatId === chat.chatId
-              const unreadCount = chat.unreadCount?.[user._id] || 0
-              
-              const displayName = chat.isGroup ? chat.groupName : getOtherParticipant(chat).name
-              const initial = displayName.charAt(0).toUpperCase()
-              
-              return (
-                <div 
-                  key={chat.chatId} 
-                  onClick={() => handleChatClick(chat)}
-                  className={`flex items-center px-4 py-3 cursor-pointer border-b border-gray-100 transition-colors relative ${isActive || isOpenLeft || isOpenRight ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-                >
-                  {/* Panel indicators */}
-                  {dualViewMode && (isOpenLeft || isOpenRight) && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
-                  )}
-                  
-                  <div className="relative">
-                    <div 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if (!chat.isGroup) {
-                          setSelectedUserProfile(getOtherParticipant(chat));
-                          setShowUserProfile(true);
-                        }
-                      }}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mr-3 flex-shrink-0 shadow-sm overflow-hidden cursor-pointer transition-all ${chat.isGroup ? 'bg-gray-500' : 'bg-gradient-to-br from-primary to-primary-dark hover:ring-2 hover:ring-primary'}`}
-                    >
-                      {chat.isGroup ? (
-                        <Users size={20} />
-                      ) : (
-                        getOtherParticipant(chat).profilePic ? (
-                          <img src={getOtherParticipant(chat).profilePic.startsWith('http') ? getOtherParticipant(chat).profilePic : `http://localhost:4000${getOtherParticipant(chat).profilePic}`} alt={displayName} className="w-full h-full object-cover" />
-                        ) : (
-                          initial
-                        )
-                      )}
-                    </div>
-                    {/* Online indicator */}
-                    {!chat.isGroup && <div className={`absolute bottom-0 right-3 w-3 h-3 rounded-full border-2 border-white ${getOtherParticipant(chat).isOnline ? 'bg-secondary' : 'bg-gray-400'}`}></div>}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline mb-1">
-                      <h3 className="text-gray-900 font-medium truncate pr-2">{displayName}</h3>
-                      {chat.lastMessageAt && (
-                        <span className={`text-xs whitespace-nowrap ${unreadCount > 0 ? 'text-secondary font-medium' : 'text-gray-500'}`}>
-                          {format(new Date(chat.lastMessageAt), 'HH:mm')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <p className={`text-sm truncate pr-2 flex items-center gap-1 ${unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
-                        {chat.lastMessage?.content?.fileUrl && <span className="italic text-gray-400">📎 File attached</span>}
-                        {chat.lastMessage?.content?.text || (chat.lastMessage?.content?.fileUrl ? '' : 'Start chatting...')}
-                      </p>
-                      {unreadCount > 0 && (
-                        <div className="bg-secondary text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Dual view indicators */}
-                    {dualViewMode && (isOpenLeft || isOpenRight) && (
-                      <div className="text-xs text-primary mt-1">
-                        {isOpenLeft && <span className="mr-2">📍 Left</span>}
-                        {isOpenRight && <span>📍 Right</span>}
-                      </div>
-                    )}
-                  </div>
+          <div className="py-2 space-y-4">
+            {/* 🔹 CHANNELS SECTION */}
+            <div>
+              <div className="px-2 py-1.5 flex items-center justify-between text-white/40 hover:text-white transition-colors cursor-pointer group/sec">
+                <div className="flex items-center gap-1.5" onClick={() => setChannelsExpanded(!channelsExpanded)}>
+                  {channelsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  <span className="text-[11px] uppercase tracking-wider font-bold">Channels</span>
                 </div>
-              )
-            })
-          )
+                <button 
+                  onClick={() => setShowGroupModal(true)} 
+                  className="opacity-0 group-hover/sec:opacity-100 hover:bg-white/10 p-0.5 rounded transition-all"
+                  title="Add Channel"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              
+              {channelsExpanded && (
+                <div className="space-y-0.5">
+                  {channels.length === 0 ? (
+                    <div className="px-6 py-1.5 text-xs text-white/30 italic">No channels yet.</div>
+                  ) : (
+                    channels.map(chat => {
+                      const isActive = activeChat?.chatId === chat.chatId
+                      const isOpenLeft = activeChatLeft?.chatId === chat.chatId
+                      const isOpenRight = activeChatRight?.chatId === chat.chatId
+                      const isOpened = isActive || isOpenLeft || isOpenRight
+                      const unreadCount = chat.unreadCount?.[user._id] || 0
+
+                      return (
+                        <div
+                          key={chat.chatId}
+                          onClick={() => handleChatClick(chat)}
+                          className={`flex items-center px-4 py-1.5 cursor-pointer transition-all ${isOpened ? 'bg-slack-active text-white font-semibold' : 'hover:bg-white/5 text-white/70'}`}
+                        >
+                          <Hash size={14} className="mr-2 text-white/40 flex-shrink-0" />
+                          <span className="truncate flex-1 text-xs">{chat.groupName}</span>
+                          {unreadCount > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 🔹 DIRECT MESSAGES SECTION */}
+            <div>
+              <div className="px-2 py-1.5 flex items-center justify-between text-white/40 hover:text-white transition-colors cursor-pointer group/sec">
+                <div className="flex items-center gap-1.5" onClick={() => setDmsExpanded(!dmsExpanded)}>
+                  {dmsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  <span className="text-[11px] uppercase tracking-wider font-bold">Direct Messages</span>
+                </div>
+                <button 
+                  onClick={() => setIsSearching(true)} 
+                  className="opacity-0 group-hover/sec:opacity-100 hover:bg-white/10 p-0.5 rounded transition-all"
+                  title="Open Search"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+
+              {dmsExpanded && (
+                <div className="space-y-0.5">
+                  {directMessages.length === 0 ? (
+                    <div className="px-6 py-1.5 text-xs text-white/30 italic">No conversations.</div>
+                  ) : (
+                    directMessages.map(chat => {
+                      const isActive = activeChat?.chatId === chat.chatId
+                      const isOpenLeft = activeChatLeft?.chatId === chat.chatId
+                      const isOpenRight = activeChatRight?.chatId === chat.chatId
+                      const isOpened = isActive || isOpenLeft || isOpenRight
+                      
+                      const otherParticipant = getOtherParticipant(chat)
+                      const unreadCount = chat.unreadCount?.[user._id] || 0
+
+                      return (
+                        <div
+                          key={chat.chatId}
+                          onClick={() => handleChatClick(chat)}
+                          className={`flex items-center px-4 py-1.5 cursor-pointer transition-all ${isOpened ? 'bg-slack-active text-white font-semibold' : 'hover:bg-white/5 text-white/70'}`}
+                        >
+                          {/* Slack DM status dot indicator */}
+                          <span className={`w-2 h-2 rounded-full mr-2.5 flex-shrink-0 ${otherParticipant.isOnline ? 'bg-emerald-500' : 'border border-white/30 bg-transparent'}`}></span>
+                          <span className="truncate flex-1 text-xs">{otherParticipant.name}</span>
+                          {unreadCount > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
+      {/* 🔹 Slack Overlays & Modals */}
+      {showProfile && (
+        <div className="absolute inset-0 bg-white z-[60] flex flex-col h-full text-gray-900">
+          <Profile onClose={() => setShowProfile(false)} />
+        </div>
+      )}
+
+      {showUserProfile && selectedUserProfile && (
+        <div className="absolute inset-0 bg-white z-[60] flex flex-col h-full text-gray-900">
+          <UserProfile user={selectedUserProfile} onClose={() => { setShowUserProfile(false); setSelectedUserProfile(null); }} />
+        </div>
+      )}
+
+      {showGroupModal && (
+        <div className="absolute inset-0 bg-white z-[60] flex flex-col h-full text-gray-900">
+          <div className="bg-slack-purple text-white h-20 px-6 flex items-end pb-4 font-bold text-base gap-3">
+            <button onClick={() => { setShowGroupModal(false); setSelectedUsers([]); setGroupName(''); }} className="hover:bg-white/10 p-1.5 rounded-md">
+              <X size={20} />
+            </button>
+            Create New Channel
+          </div>
+          <div className="p-6 flex flex-col flex-1 overflow-hidden">
+            <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Channel Name</label>
+            <input 
+              type="text" 
+              placeholder="e.g. general-discussions" 
+              className="border border-gray-300 rounded px-4 py-2 mb-4 focus:ring-1 focus:ring-slack-active focus:border-slack-active focus:outline-none"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+            />
+            {selectedUsers.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {selectedUsers.map(u => (
+                  <div key={u._id} className="bg-gray-100 border border-gray-250 rounded-full pl-3 pr-2 py-0.5 flex items-center gap-1.5 text-xs text-gray-700">
+                    {u.name}
+                    <button onClick={() => handleRemoveFromGroup(u._id)} className="hover:bg-gray-200 rounded-full p-0.5"><X size={12} className="text-gray-500" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Add Members</label>
+            <input
+              type="text"
+              placeholder="Search people to invite..."
+              className="w-full border border-gray-300 rounded px-4 py-2 focus:ring-1 focus:ring-slack-active focus:border-slack-active focus:outline-none mb-2 text-sm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="flex-1 overflow-y-auto border border-gray-100 rounded p-2">
+              {search.trim() && searchResults.map(u => (
+                <div key={u._id} onClick={() => handleSelectForGroup(u)} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer rounded transition-colors">
+                  <div className="w-8 h-8 rounded bg-gray-250 flex items-center justify-center font-bold text-gray-700 mr-2.5 text-sm">{u.name.charAt(0).toUpperCase()}</div>
+                  <span className="text-sm font-medium">{u.name}</span>
+                </div>
+              ))}
+            </div>
+            {selectedUsers.length > 0 && groupName.trim() && (
+              <button onClick={handleCreateGroup} className="bg-emerald-600 text-white py-2.5 rounded shadow hover:bg-emerald-700 transition-colors font-semibold text-sm mt-4">
+                Create Channel
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Panel Selector Modal */}
       {showPanelSelector && selectedChatForPanel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Select Panel</h3>
-            <p className="text-gray-600 mb-6">Open "{selectedChatForPanel.isGroup ? selectedChatForPanel.groupName : getOtherParticipant(selectedChatForPanel).name}" in which panel?</p>
-            <div className="flex gap-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-5 max-w-sm w-full mx-4 text-gray-800 shadow-xl border border-gray-200">
+            <h3 className="text-base font-bold text-gray-900 mb-2">Open Split Panel</h3>
+            <p className="text-xs text-gray-500 mb-5">Open "{selectedChatForPanel.isGroup ? selectedChatForPanel.groupName : getOtherParticipant(selectedChatForPanel).name}" in which split side?</p>
+            <div className="flex gap-3">
               <button
                 onClick={() => handleOpenInPanel('left')}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 bg-slack-active hover:bg-opacity-95 text-white font-semibold py-2 rounded text-xs transition-colors"
               >
                 Left Panel
               </button>
               <button
                 onClick={() => handleOpenInPanel('right')}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded text-xs transition-colors"
               >
                 Right Panel
               </button>
@@ -394,7 +419,7 @@ export default function Sidebar() {
                 setShowPanelSelector(false)
                 setSelectedChatForPanel(null)
               }}
-              className="w-full mt-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 rounded-lg transition-colors"
+              className="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded text-xs transition-colors"
             >
               Cancel
             </button>

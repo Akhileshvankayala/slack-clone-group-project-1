@@ -24,6 +24,17 @@ const messageSchema = new Schema({
         type: String, 
         enum: ['sent', 'delivered', 'read'], 
         default: 'sent' 
+    },
+    seenBy: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    edited: {
+        type: Boolean,
+        default: false
+    },
+    editedAt: {
+        type: Date
     }
 },{
     timestamps:true,

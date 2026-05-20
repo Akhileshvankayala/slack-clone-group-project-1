@@ -33,18 +33,14 @@ export default function Profile({ onClose }) {
     formData.append('name', name.trim())
     formData.append('bio', bio.trim())
     
-    // Only add file if one was selected
     if (selectedImage) {
       formData.append('profilePic', selectedImage, selectedImage.name)
     }
 
-    // Log for debugging
     console.log('Uploading profile:', {
       name: name.trim(),
       bio: bio.trim(),
       hasFile: !!selectedImage,
-      fileSize: selectedImage?.size,
-      fileMime: selectedImage?.type
     })
 
     const result = await updateProfile(formData)
@@ -63,31 +59,30 @@ export default function Profile({ onClose }) {
   const getProfileUrl = () => {
     if (previewUrl) return previewUrl
     if (user.profilePic) {
-      // Check if it's a Cloudinary URL (starts with http) or local URL
       return user.profilePic.startsWith('http') ? user.profilePic : `http://localhost:4000${user.profilePic}`
     }
     return null
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-100 animate-in slide-in-from-left duration-300">
+    <div className="flex flex-col h-full bg-white animate-in slide-in-from-left duration-200">
       {/* Header */}
-      <div className="bg-primary text-white h-28 px-4 flex items-end pb-4 gap-6">
-        <button onClick={onClose} className="hover:bg-primary-dark p-2 rounded-full transition-colors">
-          <ArrowLeft size={24} />
+      <div className="h-14 bg-white border-b border-gray-200 px-6 flex items-center gap-3">
+        <button onClick={onClose} className="hover:bg-gray-100 p-1.5 rounded-md transition-colors text-gray-650">
+          <ArrowLeft size={18} />
         </button>
-        <h1 className="text-xl font-semibold mb-1">Profile</h1>
+        <h1 className="text-sm font-bold text-gray-900">Edit Profile</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto pb-8 px-6 pt-6">
         {/* Profile Picture */}
-        <div className="flex justify-center py-8 bg-white shadow-sm mb-6">
+        <div className="flex flex-col items-center mb-6">
           <div className="relative group">
-            <div className="w-48 h-48 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-gray-50 shadow-md">
+            <div className="w-36 h-36 rounded-lg bg-slack-purple text-white flex items-center justify-center overflow-hidden border border-gray-250 shadow-xs select-none">
               {getProfileUrl() ? (
                 <img src={getProfileUrl()} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <div className="text-gray-400 font-bold text-6xl">
+                <div className="font-bold text-5xl">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -95,10 +90,10 @@ export default function Profile({ onClose }) {
             
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex flex-col items-center justify-center rounded-full transition-all text-transparent group-hover:text-white cursor-pointer"
+              className="absolute inset-0 bg-black/0 group-hover:bg-black/50 flex flex-col items-center justify-center rounded-lg transition-all text-transparent group-hover:text-white cursor-pointer"
             >
-              <Camera size={32} />
-              <span className="text-xs mt-2 uppercase font-semibold">Change Photo</span>
+              <Camera size={24} />
+              <span className="text-[10px] mt-1.5 uppercase font-bold tracking-wider">Change Photo</span>
             </button>
             
             <input 
@@ -112,67 +107,55 @@ export default function Profile({ onClose }) {
         </div>
 
         {/* Form Fields */}
-        <div className="space-y-6">
+        <div className="space-y-6 pt-4 border-t border-gray-100 max-w-md mx-auto">
           {/* Name Field */}
-          <div className="bg-white p-4 px-8 shadow-sm">
-            <div className="flex items-center gap-6 mb-2">
-              <User size={20} className="text-primary" />
-              <div className="flex-1">
-                <label className="block text-xs text-primary font-medium mb-1 uppercase tracking-wider">Your Name</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full border-b border-transparent focus:border-primary py-1 outline-none text-gray-800 text-lg transition-colors"
-                  placeholder="Enter your name"
-                />
-              </div>
-              <button className="text-gray-400 hover:text-primary">
-                <Check size={20} />
-              </button>
+          <div className="space-y-1">
+            <label className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider select-none">Display Name</label>
+            <div className="flex items-center gap-2 border border-gray-300 rounded px-3 py-1.5 focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-300">
+              <User size={16} className="text-gray-400" />
+              <input 
+                type="text" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1 outline-none text-gray-800 text-sm bg-transparent"
+                placeholder="Enter your display name"
+              />
             </div>
-            <p className="text-xs text-gray-500 ml-11">This is not your username or pin. This name will be visible to your WhatsApp contacts.</p>
+            <p className="text-[10px] text-gray-500 font-medium select-none">This name will be visible to other members in your workspace.</p>
           </div>
 
           {/* Bio Field */}
-          <div className="bg-white p-4 px-8 shadow-sm">
-            <div className="flex items-center gap-6 mb-2">
-              <Info size={20} className="text-primary" />
-              <div className="flex-1">
-                <label className="block text-xs text-primary font-medium mb-1 uppercase tracking-wider">About</label>
-                <textarea 
-                  value={bio} 
-                  onChange={(e) => setBio(e.target.value)}
-                  className="w-full border-b border-transparent focus:border-primary py-1 outline-none text-gray-800 text-lg transition-colors resize-none"
-                  placeholder="Tell something about yourself"
-                  rows={1}
-                />
-              </div>
+          <div className="space-y-1">
+            <label className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider select-none">About Me (Bio)</label>
+            <div className="flex items-start gap-2 border border-gray-300 rounded px-3 py-2 focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-300">
+              <Info size={16} className="text-gray-400 mt-0.5" />
+              <textarea 
+                value={bio} 
+                onChange={(e) => setBio(e.target.value)}
+                className="flex-1 outline-none text-gray-800 text-sm bg-transparent resize-none h-20"
+                placeholder="Tell something about yourself..."
+              />
             </div>
           </div>
 
           {/* Save Button */}
-          <div className="px-8 mt-8">
+          <div className="pt-2">
             <button 
               onClick={handleSave}
               disabled={isLoading}
-              className="w-full bg-secondary hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-500 text-white font-bold py-2.5 rounded transition-colors flex items-center justify-center gap-2 text-sm shadow-xs cursor-pointer"
             >
               {isLoading ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" />
-                  Saving...
+                  <Loader2 size={16} className="animate-spin" />
+                  Saving changes...
                 </>
               ) : (
-                'Save Profile'
+                'Save Changes'
               )}
             </button>
           </div>
         </div>
-      </div>
-      
-      <div className="bg-gray-100 p-8 text-center text-sm text-gray-500">
-        <p>Your profile info is visible to people you chat with.</p>
       </div>
     </div>
   )
