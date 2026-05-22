@@ -13,6 +13,7 @@ import {
   Moon, ArrowLeft, ArrowRight, Hash, MessageSquare, 
   ShieldAlert, Cpu, Home, MoreHorizontal
 } from 'lucide-react'
+import { getProfilePicUrl, API_BASE_URL } from '../config'
 
 export default function Dashboard() {
   const { socket, isConnected } = useSocketStore()
@@ -509,7 +510,7 @@ export default function Dashboard() {
                           <div className="relative">
                             <div className="w-8 h-8 rounded bg-emerald-600 flex items-center justify-center font-bold text-white text-xs overflow-hidden">
                               {p.profilePic ? (
-                                <img src={p.profilePic.startsWith('http') ? p.profilePic : `http://localhost:4000${p.profilePic}`} alt={p.name} className="w-full h-full object-cover" />
+                                <img src={getProfilePicUrl(p.profilePic)} alt={p.name} className="w-full h-full object-cover" />
                               ) : (
                                 p.name.charAt(0).toUpperCase()
                               )}
@@ -555,7 +556,7 @@ export default function Dashboard() {
                   <span className="flex flex-col gap-1 text-[11px] text-gray-800">
                     <span className="font-bold text-xs flex items-center gap-1"><Cpu size={12} className="text-slack-purple" /> Workspace Platform Specs:</span>
                     <span>• Sockets Connected: {isConnected ? 'Yes' : 'No'}</span>
-                    <span>• Express API URL: http://localhost:4000</span>
+                    <span>• Express API URL: {API_BASE_URL}</span>
                     <span>• Frontend Bundle: Vite HMR React</span>
                   </span>
                 ), { duration: 5000 })
@@ -678,7 +679,7 @@ export default function Dashboard() {
                           >
                             <div className="w-6 h-6 rounded bg-emerald-600 flex items-center justify-center font-bold text-white text-[10px] overflow-hidden">
                               {u.profilePic ? (
-                                <img src={u.profilePic.startsWith('http') ? u.profilePic : `http://localhost:4000${u.profilePic}`} alt={u.name} className="w-full h-full object-cover" />
+                                <img src={getProfilePicUrl(u.profilePic)} alt={u.name} className="w-full h-full object-cover" />
                               ) : (
                                 u.name.charAt(0).toUpperCase()
                               )}

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { ArrowLeft, Camera, Check, User, Info, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getProfilePicUrl } from '../config'
 
 export default function Profile({ onClose }) {
   const { user, updateProfile, isLoading } = useAuthStore()
@@ -58,10 +59,7 @@ export default function Profile({ onClose }) {
 
   const getProfileUrl = () => {
     if (previewUrl) return previewUrl
-    if (user.profilePic) {
-      return user.profilePic.startsWith('http') ? user.profilePic : `http://localhost:4000${user.profilePic}`
-    }
-    return null
+    return getProfilePicUrl(user.profilePic)
   }
 
   return (

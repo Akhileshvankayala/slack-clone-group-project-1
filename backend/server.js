@@ -19,9 +19,14 @@ dotenv.config()
 // 🔹 Create express app
 const app = express()
 
+// 🔹 Dynamic CORS origins config
+const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(",").map(url => url.trim().replace(/\/$/, ""))
+    : ["http://localhost:5173", "http://localhost:5174"];
+
 // 🔹 Middleware
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: allowedOrigins,
     credentials: true
 }))
 
@@ -45,7 +50,7 @@ const server = http.createServer(app)
 //  Attach Socket.IO
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:5173", "http://localhost:5174"],
+        origin: allowedOrigins,
         credentials:true
     }
 })

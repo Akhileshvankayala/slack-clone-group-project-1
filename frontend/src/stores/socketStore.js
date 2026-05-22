@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { io } from 'socket.io-client'
 import { useAuthStore } from './authStore'
+import { API_BASE_URL } from '../config'
 
 export const useSocketStore = create((set, get) => ({
   socket: null,
@@ -12,7 +13,7 @@ export const useSocketStore = create((set, get) => ({
     if (!token) return
     if (existingSocket) return
 
-    const socket = io('http://localhost:4000', {
+    const socket = io(API_BASE_URL, {
       auth: { token }
     })
 

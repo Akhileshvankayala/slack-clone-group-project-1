@@ -33,7 +33,9 @@ router.post("/upload", upload.single("file"), (req, res) => {
     else if (ext === ".pdf") fileType = "pdf"
     else if ([".mp3", ".wav", ".webm", ".m4a"].includes(ext)) fileType = "audio"
 
-    const fileUrl = `http://localhost:4000/uploads/${req.file.filename}`
+    // Resolve backend URL dynamically from process.env or request headers
+    const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`
+    const fileUrl = `${baseUrl}/uploads/${req.file.filename}`
     
     res.json({ fileUrl, fileType })
 })

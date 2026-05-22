@@ -1,18 +1,12 @@
 import { useState } from 'react'
 import { ArrowLeft, Clock, Mail, Info, Calendar } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { getProfilePicUrl } from '../config'
 
 export default function UserProfile({ user, onClose }) {
   const [imageLoadError, setImageLoadError] = useState(false)
 
   if (!user) return null
-
-  const getProfilePicUrl = () => {
-    if (!user.profilePic) return null
-    if (user.profilePic.startsWith('http')) return user.profilePic
-    if (user.profilePic.startsWith('/')) return `http://localhost:4000${user.profilePic}`
-    return null
-  }
 
   const getStatusText = () => {
     if (user.isOnline) return 'Online'
@@ -20,7 +14,7 @@ export default function UserProfile({ user, onClose }) {
     return 'Offline'
   }
 
-  const profileUrl = getProfilePicUrl()
+  const profileUrl = getProfilePicUrl(user.profilePic)
 
   return (
     <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-200">

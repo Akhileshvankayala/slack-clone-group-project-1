@@ -7,6 +7,7 @@ import { api } from '../stores/authStore'
 import { useSocketStore } from '../stores/socketStore'
 import { toast } from 'react-hot-toast'
 import UserProfile from './UserProfile'
+import { getProfilePicUrl, getFileUrl } from '../config'
 
 export default function ChatWindow() {
   const { user } = useAuthStore()
@@ -336,29 +337,30 @@ export default function ChatWindow() {
   const renderFile = (msg) => {
     if (!msg.content.fileUrl) return null
     const { fileUrl, fileType } = msg.content
+    const resolvedUrl = getFileUrl(fileUrl)
     
     if (fileType === 'image') {
       return (
         <div className="my-1.5 max-w-sm rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shadow-2xs">
-          <img onClick={() => setEnlargedMedia({ url: fileUrl, type: 'image' })} src={fileUrl} alt="attachment" className="max-h-60 object-cover cursor-pointer hover:opacity-95 transition" />
+          <img onClick={() => setEnlargedMedia({ url: resolvedUrl, type: 'image' })} src={resolvedUrl} alt="attachment" className="max-h-60 object-cover cursor-pointer hover:opacity-95 transition" />
         </div>
       )
     } else if (fileType === 'audio') {
       return (
         <div className="my-1.5 max-w-xs p-2 rounded bg-gray-50 border border-gray-200">
-          <audio controls src={fileUrl} className="w-full text-xs" />
+          <audio controls src={resolvedUrl} className="w-full text-xs" />
         </div>
       )
     } else if (fileType === 'pdf') {
       return (
-        <div onClick={() => setEnlargedMedia({ url: fileUrl, type: 'pdf' })} className="my-1.5 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 p-2.5 rounded-lg max-w-xs transition cursor-pointer shadow-2xs">
+        <div onClick={() => setEnlargedMedia({ url: resolvedUrl, type: 'pdf' })} className="my-1.5 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 p-2.5 rounded-lg max-w-xs transition cursor-pointer shadow-2xs">
           <FileText size={20} className="text-red-500 shrink-0" />
           <span className="text-xs font-semibold text-blue-600 truncate underline flex-1">View PDF attachment</span>
         </div>
       )
     } else {
       return (
-        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="my-1.5 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 p-2.5 rounded-lg max-w-xs transition shadow-2xs">
+        <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="my-1.5 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 p-2.5 rounded-lg max-w-xs transition shadow-2xs">
           <FileText size={20} className="text-red-500 shrink-0" />
           <span className="text-xs font-semibold text-blue-600 truncate underline flex-1">View Document</span>
         </a>
@@ -606,13 +608,13 @@ export default function ChatWindow() {
                     <div className="w-9 h-9 rounded bg-slack-purple-dark text-white font-bold text-sm mr-3 flex-shrink-0 overflow-hidden flex items-center justify-center border border-white/10 shadow-sm select-none">
                       {isOwn ? (
                         user.profilePic ? (
-                          <img src={user.profilePic.startsWith('http') ? user.profilePic : `http://localhost:4000${user.profilePic}`} className="w-full h-full object-cover" />
+                          <img src={getProfilePicUrl(user.profilePic)} className="w-full h-full object-cover" />
                         ) : (
                           user.name.charAt(0).toUpperCase()
                         )
                       ) : (
                         otherSender?.profilePic ? (
-                          <img src={otherSender.profilePic.startsWith('http') ? otherSender.profilePic : `http://localhost:4000${otherSender.profilePic}`} className="w-full h-full object-cover" />
+                          <img src={getProfilePicUrl(otherSender.profilePic)} className="w-full h-full object-cover" />
                         ) : (
                           senderName.charAt(0).toUpperCase()
                         )

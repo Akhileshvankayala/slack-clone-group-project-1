@@ -5,6 +5,7 @@ import { Search, MoreVertical, MessageSquarePlus, LogOut, Check, CheckCheck, Use
 import { format } from 'date-fns'
 import Profile from './Profile'
 import UserProfile from './UserProfile'
+import { getProfilePicUrl } from '../config'
 
 export default function Sidebar() {
   const { user, logout } = useAuthStore()
@@ -204,7 +205,7 @@ export default function Sidebar() {
                     className="w-8 h-8 rounded-md bg-white/15 flex items-center justify-center text-white font-bold mr-2.5 flex-shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-slack-active transition-all"
                   >
                     {u.profilePic ? (
-                      <img src={u.profilePic.startsWith('http') ? u.profilePic : `http://localhost:4000${u.profilePic}`} alt={u.name} className="w-full h-full object-cover" />
+                      <img src={getProfilePicUrl(u.profilePic)} alt={u.name} className="w-full h-full object-cover" />
                     ) : (
                       u.name.charAt(0).toUpperCase()
                     )}
