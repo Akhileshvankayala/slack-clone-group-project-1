@@ -22,13 +22,31 @@ const app = express()
 // 🔹 Dynamic CORS origins config
 const allowedOrigins = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(",").map(url => url.trim().replace(/\/$/, ""))
-    : ["http://localhost:5173", "http://localhost:5174"];
+    : [];
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, postman, curl)
+        if (!origin) return callback(null, true);
+        
+        const isAllowed = 
+            allowedOrigins.includes(origin) ||
+            origin.startsWith("http://localhost:") ||
+            origin.startsWith("http://127.0.0.1:") ||
+            /\.vercel\.app$/.test(origin) ||
+            origin.endsWith("vercel.app");
+            
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            callback(null, false);
+        }
+    },
+    credentials: true
+};
 
 // 🔹 Middleware
-app.use(cors({
-    origin: allowedOrigins,
-    credentials: true
-}))
+app.use(cors(corsOptions))
 
 import path from "path"
 import { fileURLToPath } from "url"
@@ -49,10 +67,7 @@ const server = http.createServer(app)
 
 //  Attach Socket.IO
 const io = new Server(server, {
-    cors: {
-        origin: allowedOrigins,
-        credentials:true
-    }
+    cors: corsOptions
 })
 socketHandler(io)
 app.set("io", io)
