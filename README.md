@@ -828,7 +828,6 @@ For issues, questions, or suggestions:
 ---
 
 ## 🎓 Learning Outcomes
-
 By working on this project, you will learn:
 
 ✅ Full-stack web application development  
